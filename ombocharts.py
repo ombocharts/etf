@@ -85,7 +85,7 @@ def start_func():
 		etfMode = True
 		excelSymbols = pd.read_excel(filePath) #this reads the excel file
 		#excelSymbols = excelSymbols.head() #this shortens the file to the first 5 rows - good for testing
-		positionSize = float(1) #you will buy positionSize dollars worth of each stock in the list (defaulted to 100), this means fractional shares
+		positionSize = float(1) #you will buy positionSize dollars worth of each stock in the list (defaulted to 1), this means fractional shares
 		create_etf()
 	else:
 		chartTitle = str(stock) + " Daily"
