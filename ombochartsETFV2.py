@@ -34,7 +34,7 @@ smasUsed = [50,200]
 smaColors = ['r', 'k']
 usedVolumeMA = [50]
 
-ogStart = dt.datetime(2020,1,1) #ogstart means original start
+ogStart = dt.datetime(2016,1,1) #ogstart means original start
 start =  ogStart - dt.timedelta(days=2 * max(smasUsed)) #check resetDate for explaination on the 2 *
 now = dt.datetime.now()
 etfMode = False
@@ -90,6 +90,7 @@ def start_func():
 	else:
 		chartTitle = str(stock) + " Daily"
 		df = pdr.get_data_yahoo(stock, start, now)
+		print("fristvalidindex is "+str(df.first))
 		if noDateGaps(df) == False:
 			print("Stock had gaps from datapoints")
 			error = 7/0 #I just wanted the program to restart because when it plots the chart with gaps in data its all messed up...
@@ -98,53 +99,30 @@ def start_func():
 
 
 def set_start_etf_date(daysToAdd):
-	global sharesToAdd, positionSize,current_stock, useStock, firstIndex, delta, daysAdded, dfDefined, iposToAdd, stock, ipoAdded,daysToAddGlob
-	#Reason why this exists: if you input a day that is not a trading day, the program fails
-	#Solution: the function will try to calculate the amount of shares to add, 
-	#if theres an error it goes an extra day in the future until it hits a trading day.
-	#if mdates.date2num(current_stock[0])
-	
-	delta = dt.timedelta(days = daysToAdd)
-	try:
-		#the amount of shares to add is calculated from the start date - this means the price should be (# of stocks in etf * 100)
-		sharesToAdd = positionSize / current_stock["Adj Close"][start + delta]
-		firstIndex = start + delta
-
-	except:
-		#THIS SECTION IS FOR IPOS ONLY
-
-		# if there's an error with something under try, it goes here. If the stock is an IPO there WILL be an error because
-		# its trying to find the 'Adj Close' at a date prior to its existance. 
-		# ex) If an IPO first datapoint was 4/01/20, and its trying to access the data from 1/01/20 there will be an error -
-		# this brings us here where I keep adding a day until there isn't an error and it reached its first datapoint
-
-		daysToAddGlob = daysToAdd
-		if daysToAdd < 365: #setting a limit to this otherwise results in errors
-			daysAdded = True
-
-			#the dataframe is initialized as the first non IPO. IPOs would make the whole chart shorter because their first datapoint
-			#is past the requested start day
-			#if the dataframe hasn't been initialized yet and this IPO hasn't been added to the list yet, it will do so.
-			if dfDefined == False and ipoAdded == False:
-				iposToAdd.append(stock)
-				ipoAdded = True
-			set_start_etf_date(daysToAdd + 1)
-
-		else:
-			useStock = False
+	global sharesToAdd, positionSize,current_stock, useStock, firstIndex, delta, daysAdded, dfDefined, iposToAdd, stock,daysToAddGlob,ipoAdded
+	current_stock_dates = []
+	for z in current_stock.index:
+		current_stock_dates.append(z)
+		break
+	sharesToAdd = positionSize / current_stock["Adj Close"][current_stock_dates[0]]
+	firstIndex = current_stock_dates[0]
+	if mdates.date2num(current_stock_dates[0]) > mdates.date2num(ogStart) and ipoAdded == False:
+		daysAdded = True
+		iposToAdd.append(stock)
+		ipoAdded = True
 
 
 def create_etf():
-	global df,current_stock, ogStart, positionSize, excelSymbols, sharesToAdd, useStock,dataGap,dataNull, firstIndex,firstStock, dfDefined, iposToAdd, stock, ipoAdded, daysAdded	
+	global df,current_stock, ogStart, positionSize, excelSymbols, sharesToAdd, useStock,dataGap,dataNull, firstIndex,firstStock, dfDefined, iposToAdd, ipoAdded, stock, daysAdded	
 	#get data for each stock and add them to the etf list with specific position size
 	dfDefined = False
-	ipoAdded = False
 	dataNull = []
 	dataGap = []
 	iposToAdd = []
 
 	for i in excelSymbols.index:
 		#Just initializing these variables - should make more sense as you read
+		ipoAdded = False
 		useStock = True
 		daysAdded = False
 		stock=str(excelSymbols["Symbol"][i])#current stock ticker we're looking at in the excel list
@@ -159,8 +137,6 @@ def create_etf():
 		if noDateGaps(current_stock) == False:#go to function for explaination
 			useStock = False
 
-		ipoAdded = False #resetting this variable	
-
 		if current_stock.isnull().values.any() or len(current_stock) < 1: #if there is any data in the dataframe that is null, it skips the stock
 			dataNull.append(stock)
 			continue #continue means goe to the next index in the for loop
@@ -169,7 +145,7 @@ def create_etf():
 			continue
 		#If the dataframe hasn't been defined and there has been no days added to the stock (this means its not an IPO)
 		#then it will define the dataframe by setting it equal to the first stock * sharesToAdd
-		if (dfDefined == False and daysAdded == False) or (dfDefined == False and daysToAddGlob < 4):
+		if (dfDefined == False and daysAdded == False):
 			firstStock = stock
 			dfDefined = True
 			df = (current_stock * sharesToAdd)
@@ -181,16 +157,22 @@ def create_etf():
 		daysAdded = False
 	for x in iposToAdd:
 		#this goes through each IPO that appeared before the datafram was defined and adds it
-		stock = x
+		if dfDefined == False:
+			print("All of the stocks you entered had IPOS after your starting date - please change the starting date to be more recent")
+			error = 7/0
+		print(x)
 		useStock = True
-		current_stock = pdr.get_data_yahoo(stock, start, now)
+		current_stock = pdr.get_data_yahoo(x, start, now)
 		set_start_etf_date(0)#go to function for explaination
 		if current_stock.isnull().values.any()or len(current_stock) < 1:
-			dataNull.append(stock)
+			dataNull.append(x)
 			#removedReasons.append("DATAPOINT WAS NULL")
 			continue
+		if noDateGaps(current_stock) == False:#go to function for explaination
+			useStock = False
+
 		if(useStock == False):
-			dataGap.append(stock)
+			dataGap.append(x)
 			#removedReasons.append("IPO PROB")
 			continue
 
@@ -252,8 +234,8 @@ def resetDate():
 	for i in df.index:
 		og = mdates.date2num(ogStart)
 		passedDate = mdates.date2num(i)
-		print("passedDate is " + str(passedDate))
-		print("ogDate is " + str(og))
+		#print("passedDate is " + str(passedDate))
+		#print("ogDate is " + str(og))
 		if int(passedDate) == int(og):
 			print("test")
 			dateReset = True
@@ -265,8 +247,8 @@ def resetDate():
 		for i in df.index:
 			og = mdates.date2num(ogStart)
 			passedDate = mdates.date2num(i)
-			print("passedDate is " + str(passedDate))
-			print("ogDate is " + str(og))
+			#print("passedDate is " + str(passedDate))
+			#print("ogDate is " + str(og))
 			if (int(passedDate) >= int(og - 4) and int(passedDate) <= int(og + 4)):
 					print("test23232")
 					df = df.iloc[int(len(removeList)):]
@@ -346,7 +328,8 @@ def figures():
 	global df, additions, stock, chartTitle
 	#sets all the additions
 	additionsAdd()
-
+	print(df['Adj Close'][dt.datetime(2020,9,11)])
+	print(df['Adj Close'][dt.datetime(2020,9,18)])
 	#volume = True creates another panel (panel 1) of volume with correctly colored bars
 	mpf.plot(df, type = "candle", addplot=additions, panel_ratios=(1,.25),figratio=(1,.25),figscale=1, style = 'yahoo', volume = True, title = chartTitle)
 
