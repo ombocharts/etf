@@ -34,7 +34,7 @@ smasUsed = [50,200]
 smaColors = ['r', 'k']
 usedVolumeMA = [50]
 
-ogStart = dt.datetime(2020,9,14) #ogstart means original start
+ogStart = dt.datetime(2020,1,1) #ogstart means original start
 start =  ogStart - dt.timedelta(days=2 * max(smasUsed)) #check resetDate for explaination on the 2 *
 now = dt.datetime.now()
 etfMode = False
@@ -261,12 +261,13 @@ def resetDate():
 			break
 		removeList.append(i)
 	if dateReset == False:
+		removeList = []	
 		for i in df.index:
 			og = mdates.date2num(ogStart)
 			passedDate = mdates.date2num(i)
 			print("passedDate is " + str(passedDate))
 			print("ogDate is " + str(og))
-			if (int(passedDate) >= int(og - 3) and int(passedDate) <= int(og + 3)):
+			if (int(passedDate) >= int(og - 4) and int(passedDate) <= int(og + 4)):
 					print("test23232")
 					df = df.iloc[int(len(removeList)):]
 					break
