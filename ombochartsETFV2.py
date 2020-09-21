@@ -133,13 +133,12 @@ def create_etf():
 			dataNull.append(stock)
 			continue
 		print(current_stock)
-		set_start_etf_date(0)#go to function for explaination
-		if noDateGaps(current_stock) == False:#go to function for explaination
-			useStock = False
-
 		if current_stock.isnull().values.any() or len(current_stock) < 1: #if there is any data in the dataframe that is null, it skips the stock
 			dataNull.append(stock)
 			continue #continue means goe to the next index in the for loop
+		set_start_etf_date(0)#go to function for explaination
+		if noDateGaps(current_stock) == False:#go to function for explaination
+			useStock = False
 		if(useStock == False):
 			dataGap.append(stock)
 			continue
@@ -162,12 +161,16 @@ def create_etf():
 			error = 7/0
 		print(x)
 		useStock = True
-		current_stock = pdr.get_data_yahoo(x, start, now)
-		set_start_etf_date(0)#go to function for explaination
+		try:
+			current_stock = pdr.get_data_yahoo(x, start, now)
+		except:
+			dataNull.append(x)
+			continue
 		if current_stock.isnull().values.any()or len(current_stock) < 1:
 			dataNull.append(x)
 			#removedReasons.append("DATAPOINT WAS NULL")
 			continue
+		set_start_etf_date(0)#go to function for explaination
 		if noDateGaps(current_stock) == False:#go to function for explaination
 			useStock = False
 
