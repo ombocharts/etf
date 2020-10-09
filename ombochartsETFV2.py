@@ -34,7 +34,7 @@ smasUsed = [50,200]
 smaColors = ['r', 'k']
 usedVolumeMA = [50]
 
-ogStart = dt.datetime(2016,1,1) #ogstart means original start
+ogStart = dt.datetime(2020,1,1) #ogstart means original start
 start =  ogStart - dt.timedelta(days=2 * max(smasUsed)) #check resetDate for explaination on the 2 *
 now = dt.datetime.now()
 etfMode = False
@@ -90,7 +90,6 @@ def start_func():
 	else:
 		chartTitle = str(stock) + " Daily"
 		df = pdr.get_data_yahoo(stock, start, now)
-		print("fristvalidindex is "+str(df.first))
 		if noDateGaps(df) == False:
 			print("Stock had gaps from datapoints")
 			error = 7/0 #I just wanted the program to restart because when it plots the chart with gaps in data its all messed up...
@@ -132,14 +131,13 @@ def create_etf():
 		except:
 			dataNull.append(stock)
 			continue
-		print(current_stock)
-		if current_stock.isnull().values.any() or len(current_stock) < 1: #if there is any data in the dataframe that is null, it skips the stock
+		if current_stock.isnull().values.any() or len(current_stock) <= 1: #if there is any data in the dataframe that is null, it skips the stock
 			dataNull.append(stock)
 			continue #continue means goe to the next index in the for loop
 		set_start_etf_date(0)#go to function for explaination
-		if noDateGaps(current_stock) == False:#go to function for explaination
-			useStock = False
-		if(useStock == False):
+		if(ipoAdded == True):
+			continue
+		if(noDateGaps(current_stock) == False):
 			dataGap.append(stock)
 			continue
 		#If the dataframe hasn't been defined and there has been no days added to the stock (this means its not an IPO)
@@ -159,14 +157,13 @@ def create_etf():
 		if dfDefined == False:
 			print("All of the stocks you entered had IPOS after your starting date - please change the starting date to be more recent")
 			error = 7/0
-		print(x)
 		useStock = True
 		try:
 			current_stock = pdr.get_data_yahoo(x, start, now)
 		except:
 			dataNull.append(x)
 			continue
-		if current_stock.isnull().values.any()or len(current_stock) < 1:
+		if current_stock.isnull().values.any()or len(current_stock) <= 1:
 			dataNull.append(x)
 			#removedReasons.append("DATAPOINT WAS NULL")
 			continue
@@ -178,7 +175,6 @@ def create_etf():
 			dataGap.append(x)
 			#removedReasons.append("IPO PROB")
 			continue
-
 		df[firstIndex:] += (current_stock[firstIndex:] * sharesToAdd)
 
 		daysAdded = False
@@ -237,10 +233,8 @@ def resetDate():
 	for i in df.index:
 		og = mdates.date2num(ogStart)
 		passedDate = mdates.date2num(i)
-		#print("passedDate is " + str(passedDate))
-		#print("ogDate is " + str(og))
+
 		if int(passedDate) == int(og):
-			print("test")
 			dateReset = True
 			df = df.iloc[int(len(removeList)):]
 			break
@@ -250,10 +244,8 @@ def resetDate():
 		for i in df.index:
 			og = mdates.date2num(ogStart)
 			passedDate = mdates.date2num(i)
-			#print("passedDate is " + str(passedDate))
-			#print("ogDate is " + str(og))
+
 			if (int(passedDate) >= int(og - 4) and int(passedDate) <= int(og + 4)):
-					print("test23232")
 					df = df.iloc[int(len(removeList)):]
 					break
 			removeList.append(i)
@@ -331,8 +323,7 @@ def figures():
 	global df, additions, stock, chartTitle
 	#sets all the additions
 	additionsAdd()
-	print(df['Adj Close'][dt.datetime(2020,9,11)])
-	print(df['Adj Close'][dt.datetime(2020,9,18)])
+
 	#volume = True creates another panel (panel 1) of volume with correctly colored bars
 	mpf.plot(df, type = "candle", addplot=additions, panel_ratios=(1,.25),figratio=(1,.25),figscale=1, style = 'yahoo', volume = True, title = chartTitle)
 
@@ -348,23 +339,6 @@ while stock != "quit":
 		print("DATAPOINT WAS NULL FOR: " + str(dataNull))
 		print("GAP BETWEEN DATA FOR: " + str(dataGap))
 	stock = input("Enter your stock ticker ('quit' to exit, 'etf' to create an etf from an excel sheet): ")
-	# try:
-	# 	start_func()
-	# 	setMovingAverages()
-	# 	webbyRSI()
-	# 	relativeStrength()
-	# 	resetDate()
-	# 	figures()
-	# 	if etfMode:
-	# 		print("First stock was: " + firstStock)
-	# 		print("DATAPOINT WAS NULL FOR: " + str(dataNull))
-	# 		print("GAP BETWEEN DATA FOR: " + str(dataGap))
-	# 	stock = input("Enter your stock ticker ('quit' to exit, 'etf' to create an etf from an excel sheet): ")
-	# except:
-	# 	print("That resulted in an error")
-	# 	stock = input("Enter your stock ticker ('quit' to exit, 'etf' to create an etf from an excel sheet): ")
-
-
 
 
 ##############################################################
